@@ -1,9 +1,18 @@
 package com.example.chontc.helloworld;
 
+import android.app.PendingIntent;
+import android.content.Context;
+import android.content.Intent;
+import android.hardware.usb.UsbDeviceConnection;
+import android.hardware.usb.UsbManager;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
 
+import com.hoho.android.usbserial.driver.UsbSerialDriver;
+import com.hoho.android.usbserial.driver.UsbSerialPort;
+import com.hoho.android.usbserial.driver.UsbSerialProber;
+import com.hoho.android.usbserial.util.SerialInputOutputManager;
 import com.jjoe64.graphview.series.DataPoint;
 import com.jjoe64.graphview.series.LineGraphSeries;
 import com.squareup.okhttp.Callback;
@@ -12,8 +21,11 @@ import com.squareup.okhttp.Request;
 import com.squareup.okhttp.Response;
 
 import java.io.IOException;
+import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
+import java.util.concurrent.Executors;
+
 import com.jjoe64.graphview.GraphView;
 
 import org.json.JSONArray;
@@ -23,6 +35,10 @@ public class MainActivity extends AppCompatActivity {
 
     private int counter = 10;
     GraphView graphViewTemp;
+    private static final String ACTION_USB_PERMISSION = "com.android.recipes.USB_PERMISSION";
+    private static final String INTENT_ACTION_GRANT_USB = BuildConfig.APPLICATION_ID + ".GRANT_USB";
+    UsbSerialPort port;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -39,7 +55,7 @@ public class MainActivity extends AppCompatActivity {
             }
         };
 
-        aTimer.schedule(aTask, 10000, 60000);
+//        aTimer.schedule(aTask, 10000, 60000);
 
 //        graphViewTemp = findViewById(R.id.graphTemperature);
 
@@ -58,7 +74,10 @@ public class MainActivity extends AppCompatActivity {
 //        LineGraphSeries<DataPoint> seriesTemp = new LineGraphSeries<>(dataPointTemp);
 //
 //        showDataOnGraph(seriesTemp, graphViewTemp);
-        setupBlinkyTimer();
+
+//        setupBlinkyTimer();
+
+        openUART();
     }
 
     private void sendDataToThingSpeak(String id, String value){
@@ -129,6 +148,41 @@ public class MainActivity extends AppCompatActivity {
                 }catch (Exception e){}
             }
         });
+    }
+
+    private void openUART(){
+        UsbManager manager = (UsbManager) getSystemService(Context.USB_SERVICE);
+        List<UsbSerialDriver> availableDrivers = UsbSerialProber.getDefaultProber().findAllDrivers(manager);
+
+        if (availableDrivers.isEmpty()) {
+            Log.d("UART", "UART is not available");
+
+        }else {
+            Log.d("UART", "UART is available");
+
+            UsbSerialDriver driver = availableDrivers.get(0);
+            UsbDeviceConnection connection = manager.openDevice(driver.getDevice());
+            if (connection == null) {
+
+                PendingIntent usbPermissionIntent = PendingIntent.getBroadcast(this, 0, new Intent(INTENT_ACTION_GRANT_USB), 0);
+                manager.requestPermission(driver.getDevice(), usbPermissionIntent);
+                manager.requestPermission(driver.getDevice(), PendingIntent.getBroadcast(this, 0, new Intent(ACTION_USB_PERMISSION), 0));
+
+                return;
+            } else {
+
+                port = driver.getPorts().get(0);
+                try {
+                    port.open(connection);
+                    port.setParameters(115200, 8, UsbSerialPort.STOPBITS_1, UsbSerialPort.PARITY_NONE);
+                    port.write("ABC#".getBytes(), 1000);
+//                    SerialInputOutputManager usbIoManager = new SerialInputOutputManager(port, this);
+//                    Executors.newSingleThreadExecutor().submit(usbIoManager);
+                } catch (Exception e) {
+
+                }
+            }
+        }
     }
 
     private void showDataOnGraph(LineGraphSeries<DataPoint> series, GraphView graph){
