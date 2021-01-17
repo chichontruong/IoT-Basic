@@ -8,6 +8,7 @@ import android.hardware.usb.UsbManager;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.View;
 
 import com.hoho.android.usbserial.driver.UsbSerialDriver;
 import com.hoho.android.usbserial.driver.UsbSerialPort;
@@ -38,7 +39,6 @@ public class MainActivity extends AppCompatActivity {
     private static final String ACTION_USB_PERMISSION = "com.android.recipes.USB_PERMISSION";
     private static final String INTENT_ACTION_GRANT_USB = BuildConfig.APPLICATION_ID + ".GRANT_USB";
     UsbSerialPort port;
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -77,7 +77,7 @@ public class MainActivity extends AppCompatActivity {
 
 //        setupBlinkyTimer();
 
-        openUART();
+//        openUART();
     }
 
     private void sendDataToThingSpeak(String id, String value){
@@ -150,7 +150,7 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
-    private void openUART(){
+    private void openUART(String message){
         UsbManager manager = (UsbManager) getSystemService(Context.USB_SERVICE);
         List<UsbSerialDriver> availableDrivers = UsbSerialProber.getDefaultProber().findAllDrivers(manager);
 
@@ -175,7 +175,7 @@ public class MainActivity extends AppCompatActivity {
                 try {
                     port.open(connection);
                     port.setParameters(115200, 8, UsbSerialPort.STOPBITS_1, UsbSerialPort.PARITY_NONE);
-                    port.write("ABC#".getBytes(), 1000);
+                    port.write((message+"#").getBytes(), 1000);
 //                    SerialInputOutputManager usbIoManager = new SerialInputOutputManager(port, this);
 //                    Executors.newSingleThreadExecutor().submit(usbIoManager);
                 } catch (Exception e) {
@@ -183,6 +183,23 @@ public class MainActivity extends AppCompatActivity {
                 }
             }
         }
+    }
+
+    /** Called when the user touches the button */
+    public void sendMessageBtn1(View view) {
+        openUART("1");
+    }
+
+    public void sendMessageBtn2(View view) {
+        openUART("2");
+    }
+
+    public void sendMessageBtn3(View view) {
+        openUART("3");
+    }
+
+    public void sendMessageBtn4(View view) {
+        openUART("4");
     }
 
     private void showDataOnGraph(LineGraphSeries<DataPoint> series, GraphView graph){
