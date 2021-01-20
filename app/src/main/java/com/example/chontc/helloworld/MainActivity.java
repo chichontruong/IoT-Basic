@@ -1,14 +1,18 @@
 package com.example.chontc.helloworld;
 
 import android.app.PendingIntent;
+import android.content.ActivityNotFoundException;
 import android.content.Context;
 import android.content.Intent;
 import android.hardware.usb.UsbDeviceConnection;
 import android.hardware.usb.UsbManager;
+import android.speech.RecognizerIntent;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
+import android.widget.EditText;
+import android.widget.Toast;
 
 import com.hoho.android.usbserial.driver.UsbSerialDriver;
 import com.hoho.android.usbserial.driver.UsbSerialPort;
@@ -22,7 +26,9 @@ import com.squareup.okhttp.Request;
 import com.squareup.okhttp.Response;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.Executors;
@@ -222,4 +228,48 @@ public class MainActivity extends AppCompatActivity {
         mTimer.schedule(mTask, 2000, 5000);
     }
 
+    final int REQ_CODE_SPEECH_INPUT = 100;
+    private void promptSpeechInput(View view) {
+        Intent intent = new Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH);
+        intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM);
+        intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE, Locale.getDefault());
+        intent.putExtra(RecognizerIntent.EXTRA_PROMPT,"Đang lắng nghe...");
+        try {
+            startActivityForResult(intent, REQ_CODE_SPEECH_INPUT);
+        } catch (ActivityNotFoundException a) {
+            Toast.makeText(getApplicationContext(),"Không hỗ trợ giọng nói", Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+
+        switch (requestCode) {
+            case REQ_CODE_SPEECH_INPUT: {
+                if (resultCode == RESULT_OK && null != data) {
+
+                    ArrayList<String> result = data.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS);
+
+                    Log.d("VOICE", "***" + result.get(0) + "***");
+                    String cmd = result.get(0).toLowerCase();
+                    if (cmd.contains("bật") && cmd.contains("đèn")){
+                        try{
+                            port.write("1#".getBytes(), 1000);
+                        }
+                        catch (Exception e){
+
+                        }
+                    }
+//                    EditText input ((EditText)findViewById(R.id.editTextTaskDescription));
+//                    input.setText(result.get(0)); // set the input data to the editText alongside if want to.
+//                    result.get(0) chính xác 90%
+//                    result.get(1)
+//                    result.get(2)
+                }
+                break;
+            }
+
+        }
+    }
 }
