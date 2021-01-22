@@ -320,6 +320,11 @@ public class MainActivity extends Activity implements SerialInputOutputManager.L
 
     }
 
+    public void onReadTextClick(View v){
+        EditText et=(EditText)findViewById(R.id.editSpeech);
+        ConvertTextToSpeech(et.getText().toString());
+    }
+
     TextToSpeech tts;
     private void ConvertTextToSpeech(String data) {
         tts.speak(data, TextToSpeech.QUEUE_FLUSH, null);
