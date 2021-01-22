@@ -8,6 +8,7 @@ import android.content.Intent;
 import android.hardware.usb.UsbDeviceConnection;
 import android.hardware.usb.UsbManager;
 import android.speech.RecognizerIntent;
+import android.speech.tts.TextToSpeech;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
@@ -86,6 +87,29 @@ public class MainActivity extends Activity implements SerialInputOutputManager.L
 //        setupBlinkyTimer();
 
         openUART("TEST");
+
+        //Text sang giọng nói
+        tts=new TextToSpeech(MainActivity.this, new TextToSpeech.OnInitListener() {
+            @Override
+            public void onInit(int status) {
+                // TODO Auto-generated method stub
+                if(status == TextToSpeech.SUCCESS){
+                    int result=tts.setLanguage(Locale.getDefault());
+                    if(result==TextToSpeech.LANG_MISSING_DATA ||
+                            result==TextToSpeech.LANG_NOT_SUPPORTED){
+                            Log.e("error", "This Language is not supported");
+                    }
+                    else{
+                        ConvertTextToSpeech("Hello");
+                        Log.d("ABC", "OKOK");
+                    }
+                }
+                else
+                    Log.e("error", "Initilization Failed!");
+            }
+        });
+        //end text sang giọng nói
+        ConvertTextToSpeech("Hello Johnny!");
     }
 
     private void sendDataToThingSpeak(String id, String value){
@@ -294,5 +318,10 @@ public class MainActivity extends Activity implements SerialInputOutputManager.L
     @Override
     public void onRunError(Exception e) {
 
+    }
+
+    TextToSpeech tts;
+    private void ConvertTextToSpeech(String data) {
+        tts.speak(data, TextToSpeech.QUEUE_FLUSH, null);
     }
 }
