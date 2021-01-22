@@ -1,5 +1,6 @@
 package com.example.chontc.helloworld;
 
+import android.app.Activity;
 import android.app.PendingIntent;
 import android.content.ActivityNotFoundException;
 import android.content.Context;
@@ -12,6 +13,7 @@ import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
 import android.widget.EditText;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import com.hoho.android.usbserial.driver.UsbSerialDriver;
@@ -38,7 +40,7 @@ import com.jjoe64.graphview.GraphView;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends Activity implements SerialInputOutputManager.Listener {
 
     private int counter = 10;
     GraphView graphViewTemp;
@@ -83,7 +85,7 @@ public class MainActivity extends AppCompatActivity {
 
 //        setupBlinkyTimer();
 
-//        openUART();
+        openUART("TEST");
     }
 
     private void sendDataToThingSpeak(String id, String value){
@@ -182,8 +184,8 @@ public class MainActivity extends AppCompatActivity {
                     port.open(connection);
                     port.setParameters(115200, 8, UsbSerialPort.STOPBITS_1, UsbSerialPort.PARITY_NONE);
                     port.write((message+"#").getBytes(), 1000);
-//                    SerialInputOutputManager usbIoManager = new SerialInputOutputManager(port, this);
-//                    Executors.newSingleThreadExecutor().submit(usbIoManager);
+                    SerialInputOutputManager usbIoManager = new SerialInputOutputManager(port, this);
+                    Executors.newSingleThreadExecutor().submit(usbIoManager);
                 } catch (Exception e) {
 
                 }
@@ -192,9 +194,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     /** Called when the user touches the button */
-    public void sendMessageBtn1(View view) {
-        openUART("1");
-    }
+    public void sendMessageBtn1(View view) {openUART("1");}
 
     public void sendMessageBtn2(View view) {
         openUART("2");
@@ -229,6 +229,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     final int REQ_CODE_SPEECH_INPUT = 100;
+
     private void promptSpeechInput(View view) {
         Intent intent = new Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH);
         intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM);
@@ -248,7 +249,6 @@ public class MainActivity extends AppCompatActivity {
         switch (requestCode) {
             case REQ_CODE_SPEECH_INPUT: {
                 if (resultCode == RESULT_OK && null != data) {
-
                     ArrayList<String> result = data.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS);
 
                     Log.d("VOICE", "***" + result.get(0) + "***");
@@ -261,6 +261,7 @@ public class MainActivity extends AppCompatActivity {
 
                         }
                     }
+
 //                    EditText input ((EditText)findViewById(R.id.editTextTaskDescription));
 //                    input.setText(result.get(0)); // set the input data to the editText alongside if want to.
 //                    result.get(0) chính xác 90%
@@ -271,5 +272,27 @@ public class MainActivity extends AppCompatActivity {
             }
 
         }
+    }
+
+    String buffer = "";
+    @Override
+    public void onNewData(byte[] data) {
+        buffer += new String(data);
+        TextView myAwesomeTextView = (TextView)findViewById(R.id.txtMessage);
+
+
+        int SoC = buffer.indexOf("!");
+        int EoC = buffer.indexOf("#");
+
+        if (SoC >= 0 && EoC > SoC){
+            String cmd = buffer.substring(SoC + 1, EoC);
+            myAwesomeTextView.setText(cmd);
+            buffer = buffer.substring(EoC + 1, buffer.length());
+        }
+    }
+
+    @Override
+    public void onRunError(Exception e) {
+
     }
 }
